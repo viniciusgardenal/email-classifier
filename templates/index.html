@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF--8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Emails com IA</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Classificador de Emails</h1>
+            <p>Cole o texto do seu email abaixo para classificá-lo e obter uma sugestão de resposta.</p>
+        </header>
+
+        <main>
+            <form id="email-form">
+                <textarea id="email-text" name="email-text" rows="10" placeholder="Digite ou cole o conteúdo do email aqui..."></textarea>
+                <button type="submit" id="submit-btn">Analisar Email</button>
+            </form>
+
+            <div id="results-container" class="hidden">
+                <h2>Resultados da Análise</h2>
+                <div id="loader" class="hidden"></div>
+                <div id="results-content">
+                    <p><strong>Categoria:</strong> <span id="category"></span></p>
+                    <p><strong>Resposta Sugerida:</strong></p>
+                    <div id="suggested-response" class="response-box"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Desenvolvido como parte de um desafio técnico.</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
