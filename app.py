@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 try:
     classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-    generator = pipeline("text2text-generation", model="google/flan-t5-small")
+    generator = pipeline("text2text-generation", model="google/flan-t5-large")  # modelo mais robusto
 except Exception as e:
     print(f"Erro ao carregar os modelos: {e}")
     classifier = None
@@ -16,7 +16,6 @@ except Exception as e:
 def home():
     return render_template('index.html')
 
-# Rota da API para processar o email
 @app.route('/process-email', methods=['POST'])
 def process_email():
     if not classifier or not generator:
@@ -34,37 +33,31 @@ def process_email():
     top_category = classification_result['labels'][0]
     
     # --- 2. Geração de Resposta ---
-    prompt = ""
     if top_category == "Produtivo":
-        prompt = f"""INSTRUÇÃO: Com base no email abaixo, escreva uma resposta profissional e curta em português confirmando o recebimento da solicitação e informando que a equipe irá processá-la.
+        prompt = f"""Email: "{email_text[:600]}"
 
-EMAIL ORIGINAL:
----
-{email_text[:600]}
----
-
-RESPOSTA SUGERIDA:"""
-    else: # Improdutivo
-        prompt = f"""INSTRUÇÃO: Com base na mensagem amigável abaixo, escreva uma resposta extremamente curta e cordial em português, como "Obrigado!" ou "Agradecemos a mensagem!".
-
-MENSAGEM ORIGINAL:
----
-{email_text[:400]}
----
-
-RESPOSTA SUGERIDA:"""
-
-    generated_text = generator(prompt, max_new_tokens=300, num_return_sequences=1)
-    full_output = generated_text[0]['generated_text']
-
-    anchor = "RESPOSTA SUGERIDA:"
-    anchor_position = full_output.find(anchor)
-
-    if anchor_position != -1:
-        start_of_response = anchor_position + len(anchor)
-        suggested_response = full_output[start_of_response:].strip()
+    Gere uma resposta curta, educada e profissional em português confirmando o recebimento e informando que a solicitação será processada:"""
     else:
-        suggested_response = full_output.strip()
+        prompt = f"""Mensagem: "{email_text[:400]}"
+
+    Gere uma resposta extremamente curta e cordial em português (exemplo: "Obrigado!" ou "Agradecemos a mensagem!"):"""
+
+
+    generated_text = generator(
+    prompt, 
+    max_new_tokens=60, 
+    num_return_sequences=1,
+    do_sample=True, 
+    temperature=0.7
+)
+    suggested_response = generated_text[0]['generated_text'].strip()
+
+    # fallback para evitar que copie o email inteiro
+    if len(suggested_response) < 5 or email_text[:50] in suggested_response:
+        if top_category == "Produtivo":
+            suggested_response = "Recebemos sua solicitação e nossa equipe irá processá-la em breve."
+        else:
+            suggested_response = "Obrigado pela mensagem!"
 
     return jsonify({
         "category": top_category,
@@ -72,6 +65,5 @@ RESPOSTA SUGERIDA:"""
     })
 
 if __name__ == '__main__':
-    # A porta é definida pela variável de ambiente PORT, útil para a hospedagem
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
